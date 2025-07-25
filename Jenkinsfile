@@ -2,9 +2,8 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = "us-east-1"
-        ECR_REPO = "577638375557.dkr.ecr.us-east-1.amazonaws.com/flask-app"
-        IMAGE_TAG = "latest"
+        AWS_REGION = 'us-east-1'
+        ECR_REPO = '577638375557.dkr.ecr.us-east-1.amazonaws.com/flask-app'
     }
 
     stages {
@@ -16,39 +15,32 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t ${ECR_REPO}:${IMAGE_TAG} ."
-                }
+                bat 'docker build -t flask-app .'
             }
         }
 
         stage('Login to ECR') {
             steps {
-                script {
-                    sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REPO}"
-                }
+                bat 'aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %ECR_REPO%'
             }
         }
 
         stage('Push to ECR') {
             steps {
-                script {
-                    sh "docker push ${ECR_REPO}:${IMAGE_TAG}"
-                }
+                bat 'docker tag flask-app:latest %ECR_REPO%:latest'
+                bat 'docker push %ECR_REPO%:latest'
             }
         }
 
         stage('Deploy to ECS') {
             steps {
-                script {
-                    sh """
-                        aws ecs update-service \
-                        --cluster flask-cluster \
-                        --service flask-service \
-                        --force-new-deployment \
-                        --region ${AWS_REGION}
-                    """
-                }
+                bat '''
+                aws ecs update-service ^
+                  --cluster flask-cluster ^
+                  --service flask-service ^
+                  --force-new-deployment ^
+                  --region %AWS_REGION%
+                '''
             }
         }
     }
